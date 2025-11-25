@@ -88,3 +88,4 @@ AI 메인. search.lua를 호출하여 최적 수 선택.
 - Monte Carlo Tree Search
 - 프로모션 UI 메뉴 추가
 - 체크 시 알림 메시지
+

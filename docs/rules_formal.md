@@ -67,3 +67,4 @@ Castle(side) 가능 iff:
 # 7. 프로모션
 
 u.id = Pawn ∧ u.y ∈ {1,8} → u becomes Queen(side)
+
