@@ -54,37 +54,21 @@ function game.on_select_unit()
 
     wesnoth.message("CHESS", "선택됨: "..u.type)
 
-    game.selected = u
+    game.selected_unit = u
     game.highlight_moves(u)
 end
 
 
 function game.highlight_moves(u)
-    wesnoth.message("DEBUG", "Highlight moves for "..u.type)
-    wesnoth.wml_actions.scroll_to({x=u.x, y=u.y})
+    local moves = game.get_legal_moves(u)
     
-    -- 기존 표시 제거
-    wesnoth.wml_actions.remove_item({})
-
-    for dx = -1,1 do
-        for dy = -1,1 do
-            if not (dx==0 and dy==0) then
-                local nx = u.x + dx
-                local ny = u.y + dy
-                
-                if nx >= 1 and nx <= 8 and ny >= 1 and ny <= 8 then
-                    -- 목적 hex가 비어 있는지 확인
-                    local target = wesnoth.get_unit(nx, ny)
-                    if not target then
-                        wesnoth.wml_actions.item({
-                            x=nx,
-                            y=ny,
-                            image="misc/capture.png"
-                        })
-                    end
-                end
-            end
-        end
+    for _, hex in ipairs(moves) do
+        wesnoth.wml_actions.item({
+            x=hex.x,
+            y=hex.y,
+            image="misc/highlight.png"
+        })
+        table.insert(game.highlighted_hexes, hex)
     end
 end
 
@@ -92,13 +76,18 @@ end
 function game.on_move_unit(to_x, to_y)
     wesnoth.message("DEBUG", "on_move_unit() 실행됨")
 
-    if not game.selected then
-        wesnoth.message("ERROR", "이동하려는 선택된 유닛이 없습니다")  
+    local u = game.selected_unit
+    if not u then
+        wesnoth.message("ERROR", "이동하려는 선택된 유닛이 없습니다")
         return
     end
 
-    local u = game.selected
-
+    if u.type == "Chess_Pawn_White" or u.type == "Chess_Pawn_Black" then
+        if not game.can_move_pawn(u, to_x, to_y) then
+            wesnoth.message("CHESS", "잘못된 폰 이동")
+            return
+        end
+    end
     wesnoth.wml_actions.move_unit({
         id = u.id,
         x  = to_x,
@@ -111,5 +100,60 @@ function game.on_move_unit(to_x, to_y)
     game.selected = nil
 end
 
+function game.can_move_pawn(u, to_x, to_y)
+    local ux, uy = u.x, u.y
+
+    -- side=1 은 백, 위에서 아래로 이동
+    -- side=2 은 흑, 아래에서 위로 이동
+    local dir = (u.side == 1) and -1 or 1
+
+    -- 타겟 위치 유닛 확인
+    local target = wesnoth.get_unit(to_x, to_y)
+
+    -----------------------------------------------------------
+    -- 1) 기본 1칸 전진 (유닛 없어야 함)
+    -----------------------------------------------------------
+    if to_x == ux and to_y == uy + dir then
+        if not target then
+            return true
+        end
+    end
+
+    -----------------------------------------------------------
+    -- 2) 처음 위치에서 2칸 전진 가능
+    -- 백 폰 초기 y = 7
+    -- 흑 폰 초기 y = 2
+    -----------------------------------------------------------
+    if to_x == ux and to_y == uy + 2*dir then
+        if not u.has_moved then
+            -- 중간 칸 확인
+            local mid_y = uy + dir
+            if not wesnoth.get_unit(ux, mid_y) and not target then
+                return true
+            end
+        end
+    end
+
+    -----------------------------------------------------------
+    -- 3) 대각선 공격 (그 칸에 적 유닛 있어야 가능)
+    -----------------------------------------------------------
+    if math.abs(to_x - ux) == 1 and to_y == uy + dir then
+        if target and target.side ~= u.side then
+            return true
+        end
+    end
+
+    return false
+end
+
+function game.get_legal_moves(u)
+    if u.type == "Chess_Pawn_White" or u.type == "Chess_Pawn_Black" then
+        return game.get_pawn_moves(u)
+    elseif u.type == "Chess_Rook_White" or u.type == "Chess_Rook_Black" then
+        return game.get_rook_moves(u)
+    elseif u.type == "Chess_Knight_White" or u.type == "Chess_Knight_Black" then
+        return game.get_knight_moves(u)
+    end
+end
 
 return game
