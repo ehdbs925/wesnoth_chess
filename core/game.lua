@@ -93,7 +93,7 @@ function game.on_move_unit(to_x, to_y)
     wesnoth.message("DEBUG", "on_move_unit() 실행됨")
 
     if not game.selected then
-        wesnoth.message("ERROR", "이동하려는 선택된 유닛이 없습니다")
+        wesnoth.message("ERROR", "이동하려는 선택된 유닛이 없습니다")  
         return
     end
 
