@@ -79,7 +79,7 @@ function game.highlight_moves(u)
                         wesnoth.wml_actions.item({
                             x=nx,
                             y=ny,
-                            image="misc/mark-hex.png"
+                            image="misc/capture.png"
                         })
                     end
                 end
