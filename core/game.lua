@@ -211,6 +211,7 @@ function game.highlight_moves(u)
         end
     end
     wesnoth.wml_actions.redraw({})
+    
 end
 
 function game.clear_highlights()
