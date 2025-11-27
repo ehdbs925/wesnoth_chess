@@ -316,29 +316,40 @@ function game.get_bishop_moves(u) return get_sliding_moves(u, {{-1,-1},{1,-1},{-
 function game.get_queen_moves(u) return get_sliding_moves(u, {{0,-1},{0,1},{-1,0},{1,0},{-1,-1},{1,-1},{-1,1},{1,1}}) end
 function game.get_knight_moves(u) return get_step_moves(u, {{1,-2},{2,-1},{2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2}}) end
 function game.get_king_moves(u)
-    local moves = get_step_moves(u, {{0,-1},{0,1},{-1,0},{1,0},{-1,-1},{1,-1},{-1,1},{1,1}})
+    local moves = get_step_moves(u, {
+        {0,-1},{0,1},{-1,0},{1,0},
+        {-1,-1},{1,-1},{-1,1},{1,1}
+    })
 
     local side = u.side
-    local enemy = (side == 1) and 2 or 1
+    local y = u.y
 
-    -- 현재 킹이 체크 상태면 캐슬링 불가
-    if game.is_king_in_check(side) then
-        return moves
-    end
-
-    if not u.variables.chess_moved then
-        local y = u.y
+    -- 캐슬링 가능성 체크
+    if not u.variables.chess_moved and not game.is_king_in_check(side) then
+        
+        -- king side
         local rk = wesnoth.get_unit(8, y)
-        if rk and not rk.variables.chess_moved and check_spot(u,6,y)=="empty" and check_spot(u,7,y)=="empty" then
+        if rk and not rk.variables.chess_moved
+           and check_spot(u,6,y)=="empty"
+           and check_spot(u,7,y)=="empty"
+        then
             table.insert(moves, {x=7, y=y, is_castle="kingside"})
         end
+
+        -- queen side
         local rq = wesnoth.get_unit(1, y)
-        if rq and not rq.variables.chess_moved and check_spot(u,2,y)=="empty" and check_spot(u,3,y)=="empty" and check_spot(u,4,y)=="empty" then
+        if rq and not rq.variables.chess_moved
+           and check_spot(u,2,y)=="empty"
+           and check_spot(u,3,y)=="empty"
+           and check_spot(u,4,y)=="empty"
+        then
             table.insert(moves, {x=3, y=y, is_castle="queenside"})
         end
     end
+
     return moves
 end
+
 
 function game.do_attack(attacker, defender)
 
@@ -393,7 +404,6 @@ function game.ai_turn()
         game.selected_unit = final_unit
         game.perform_move(final_move.x, final_move.y, final_move)
     end
-    wesnoth.message("DEBUG", "Unit moved to (" .. final_unit.type .. final_move.x .. "," .. final_move.y .. ")")
     wesnoth.fire("end_turn")
 end
 
@@ -635,12 +645,20 @@ function game.is_king_in_check(side)
     local enemies = wesnoth.get_units({ side = (side == 1) and 2 or 1 })
 
     for _, enemy in ipairs(enemies) do
+        -- 핵심!!!
+        if game.is_king(enemy) then
+            -- 킹 움직임은 공격 판정에서 제외
+            goto continue_enemy
+        end
+        
         local moves = game.get_legal_moves(enemy)
         for _, hex in ipairs(moves) do
             if hex.x == king.x and hex.y == king.y then
                 return true
             end
         end
+
+        ::continue_enemy::
     end
 
     return false
