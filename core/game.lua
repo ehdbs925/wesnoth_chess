@@ -187,7 +187,7 @@ function game.perform_move(to_x, to_y, move_info)
     if me then wesnoth.extract_unit(me) end
     
     wesnoth.put_unit({ id=u_id, type=u_type, side=u_side, x=to_x, y=to_y, moves=0 })
-    wesnoth.message("DEBUG", "Unit moved to (" .. to_x .. "," .. to_y .. ")")
+    wesnoth.message("DEBUG", "Unit moved to (".. u_type .. to_x .. "," .. to_y .. ")")
     
      -- 이동 후 처리
     local moved_u = wesnoth.get_unit(to_x, to_y)
@@ -317,6 +317,15 @@ function game.get_queen_moves(u) return get_sliding_moves(u, {{0,-1},{0,1},{-1,0
 function game.get_knight_moves(u) return get_step_moves(u, {{1,-2},{2,-1},{2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2}}) end
 function game.get_king_moves(u)
     local moves = get_step_moves(u, {{0,-1},{0,1},{-1,0},{1,0},{-1,-1},{1,-1},{-1,1},{1,1}})
+
+    local side = u.side
+    local enemy = (side == 1) and 2 or 1
+
+    -- 현재 킹이 체크 상태면 캐슬링 불가
+    if game.is_king_in_check(side) then
+        return moves
+    end
+
     if not u.variables.chess_moved then
         local y = u.y
         local rk = wesnoth.get_unit(8, y)
@@ -384,7 +393,7 @@ function game.ai_turn()
         game.selected_unit = final_unit
         game.perform_move(final_move.x, final_move.y, final_move)
     end
-    wesnoth.message("DEBUG", "Unit moved to (" .. final_move.x .. "," .. final_move.y .. ")")
+    wesnoth.message("DEBUG", "Unit moved to (" .. final_unit.type .. final_move.x .. "," .. final_move.y .. ")")
     wesnoth.fire("end_turn")
 end
 
