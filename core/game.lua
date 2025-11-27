@@ -491,14 +491,41 @@ function game.ai_score_move(u, hex)
 end
 
 function game.end_game(dead_side)
+    -- 1. 경로 및 이미지 설정
+    -- (아까 성공하신 경로 방식을 유지합니다)
+    local path_prefix = "data/add-ons/wesnoth_chess/images/"
+    local final_image = ""
+    local final_result = ""
+
     if dead_side == 1 then
-        wesnoth.message("GAME", "백색 킹이 죽었습니다 — 흑의 승리!")
-        wesnoth.wml_actions.endlevel({ result="defeat" })
+        final_image = "defart.png"
+        final_result = "defeat"
     else
-        wesnoth.message("GAME", "흑색 킹이 죽었습니다 — 백의 승리!")
-        wesnoth.wml_actions.endlevel({ result="victory" })
+        final_image = "victory.png"
+        final_result = "victory"
     end
-    wesnoth.delay(2000)
+    
+    local full_path = path_prefix .. final_image
+
+    -- 2. [텍스트 없음] 이미지만 맵 중앙(4,4)에 띄우기
+    -- wesnoth.message()를 뺐기 때문에 글자는 안 나옵니다.
+    wesnoth.wml_actions.item({
+        x = 4,
+        y = 4,
+        halo = full_path
+    })
+
+    -- 3. 5초 동안 대기 (1000 = 1초)
+    wesnoth.delay(5000)
+
+    -- 4. 이미지 지우기 (화면에서 사라짐)
+    wesnoth.wml_actions.remove_item({
+        x = 4,
+        y = 4
+    })
+
+    -- 5. 게임 종료 처리
+    wesnoth.wml_actions.endlevel({ result = final_result })
 end
 
 function game.is_king_in_check(side)
